@@ -1,0 +1,23 @@
+.hoverbutton:hover{
+    opacity:0.5;
+}
+
+.backgroundbar{
+    -fx-background-color:#ddd;
+}
+
+.progressbar > .track{
+    -fx-control-inner-background:#ccc;
+    -fx-background-radius:1;
+    -fx-background-insets:4 0 4 0;
+}
+
+.progressbar > .bar{
+    -fx-accent:#888;
+    -fx-background-radius:1;
+    -fx-background-insets:4 0 4 0;
+}
+
+.timelabel{
+    
+}
