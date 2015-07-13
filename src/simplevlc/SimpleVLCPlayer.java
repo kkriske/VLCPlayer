@@ -6,6 +6,7 @@
 package simplevlc;
 
 import com.sun.jna.NativeLibrary;
+import java.awt.Dimension;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,7 +14,6 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelFormat;
@@ -40,10 +40,8 @@ public class SimpleVLCPlayer extends StackPane {
     final private ImageView canvas;
     final private WritableImage img;
     final private MediaPlayer mp;
-    final private AtomicInteger frameNumber;
-    final private Stage primstage;
     final private Controls controls;
-    private SimpleDoubleProperty ratio;
+    final private SimpleDoubleProperty ratio;
 
     private final static int MIN_WIDTH = 400,
             MIN_HEIGHT = 300;
@@ -77,15 +75,12 @@ public class SimpleVLCPlayer extends StackPane {
     }
 
     public SimpleVLCPlayer(Stage primstage, boolean controlsVisible, String... args) {
-        this.primstage = primstage;
         //init visual content
-        Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
-        int nw = (int) visualBounds.getWidth(), nh = (int) visualBounds.getHeight();
-        img = new WritableImage(nw, nh);
+        final Dimension bounds = getMaxBounds();
+
+        img = new WritableImage((int) bounds.getWidth(), (int) bounds.getHeight());
         canvas = new ImageView(img);
-        System.out.println("first: " + getWidth());
         super.getChildren().add(canvas);
-        System.out.println("second: " + getWidth());
         setBackground(new Background(new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
 
         primstage.setOnCloseRequest(e -> release());
@@ -115,15 +110,12 @@ public class SimpleVLCPlayer extends StackPane {
         //init MediaPlayer
         final AtomicReference<ByteBuffer> currentByteBuffer = new AtomicReference<>();
         final WritablePixelFormat<ByteBuffer> byteBgraInstance = PixelFormat.getByteBgraPreInstance();
-        frameNumber = new AtomicInteger(0);
+        final AtomicInteger frameNumber = new AtomicInteger(0);
 
         mp = new MediaPlayerFactory(args).newDirectMediaPlayer(
                 (w, h) -> {
-                    Platform.runLater(() -> {
-                        ratio.set((double) h / (double) w);
-
-                    });
-                    return new RV32BufferFormat(nw, nh);
+                    Platform.runLater(() -> ratio.set((double) h / (double) w));
+                    return new RV32BufferFormat((int) bounds.getWidth(), (int) bounds.getHeight());
                 },
                 (dmp, nativeBuffers, bf) -> {
                     final int renderFrameNumber = frameNumber.incrementAndGet();
@@ -137,7 +129,7 @@ public class SimpleVLCPlayer extends StackPane {
                             img.getPixelWriter().setPixels(0, 0, bf.getWidth(), bf.getHeight(), byteBgraInstance, byteBuffer, bf.getPitches()[0]);
                         } else {
                             System.out.println(
-                                    String.format("[FINE] %s - Skipped late frame %d (actual = %d)",
+                                    String.format("%s - Skipped late frame %d (actual = %d)",
                                             SimpleVLCPlayer.this.getClass().getSimpleName(),
                                             renderFrameNumber,
                                             actualFrameNumber
@@ -147,6 +139,7 @@ public class SimpleVLCPlayer extends StackPane {
                     });
                 });
 
+        //init controls
         controls = new Controls(mp, primstage);
         heightProperty().addListener((s, o, n) -> controls.setPrefHeight((double) n));
         widthProperty().addListener((s, o, n) -> controls.setPrefWidth((double) n));
@@ -154,22 +147,28 @@ public class SimpleVLCPlayer extends StackPane {
         setControlsVisible(controlsVisible);
     }
 
-    private void updateSize() {
-        updateSize(getWidth(), getHeight());
+    private Dimension getMaxBounds() {
+        Dimension dim = new Dimension(0, 0);
+        Screen.getScreens().stream().map((s) -> s.getVisualBounds()).forEach((bounds) -> {
+            dim.setSize(
+                    dim.getWidth() < bounds.getWidth() ? bounds.getWidth() : dim.getWidth(),
+                    dim.getHeight() < bounds.getHeight() ? bounds.getHeight() : dim.getHeight()
+            );
+        });
+        return dim;
     }
 
-    private void updateSize(double w, double h) {
-        if (ratio.getValue().isNaN()) {
-            return;
-        }
-        double r = ratio.get();
-        double fith = r * w;
-        if (fith > h) {
-            canvas.setFitHeight(h);
-            canvas.setFitWidth(h / r);
-        } else {
-            canvas.setFitHeight(fith);
-            canvas.setFitWidth(w);
+    private void updateSize() {
+        if (!ratio.getValue().isNaN()) {
+            double w = getWidth(), h = getHeight(), r = ratio.get();
+            double fith = r * w;
+            if (fith > h) {
+                canvas.setFitHeight(h);
+                canvas.setFitWidth(h / r);
+            } else {
+                canvas.setFitHeight(fith);
+                canvas.setFitWidth(w);
+            }
         }
     }
 

@@ -111,8 +111,8 @@ public class Controls extends AnchorPane implements Initializable {
     private void initKeyMapping() {
         map.put(KeyCode.F, e -> fullscreen());
         map.put(KeyCode.SPACE, e -> playpause());
-        map.put(KeyCode.LEFT, e -> rewind(e.isControlDown()));
-        map.put(KeyCode.RIGHT, e -> forward(e.isControlDown()));
+        map.put(KeyCode.LEFT, e -> rewind(e));
+        map.put(KeyCode.RIGHT, e -> forward(e));
         map.put(KeyCode.N, e -> mp.playMedia("D:\\films\\Just Before I Go (2014) [1080p]\\Just.Before.I.Go.2014.1080p.BluRay.x264.YIFY.mp4"));
         map.put(KeyCode.E, e -> mp.nextFrame());
     }
@@ -126,15 +126,15 @@ public class Controls extends AnchorPane implements Initializable {
         primstage.setFullScreen(!primstage.isFullScreen());
     }
 
-    private void rewind(boolean ctrl) {
-        if (ctrl) {
+    private void rewind(KeyEvent e) {
+        if (e.isControlDown()) {
             long time = mp.getTime() - 5000;
             mp.setTime(time < 0 ? 0 : time);
         }
     }
 
-    private void forward(boolean ctrl) {
-        if (ctrl) {
+    private void forward(KeyEvent e) {
+        if (e.isControlDown()) {
             long time = mp.getTime() + 5000;
             mp.setTime(time > mp.getLength() ? mp.getLength() : time);
         }
