@@ -5,6 +5,7 @@
  */
 package simplevlc;
 
+import com.sun.jna.Memory;
 import com.sun.jna.NativeLibrary;
 import java.awt.Dimension;
 import java.nio.ByteBuffer;
@@ -28,6 +29,9 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import uk.co.caprica.vlcj.player.MediaPlayer;
 import uk.co.caprica.vlcj.player.MediaPlayerFactory;
+import uk.co.caprica.vlcj.player.direct.BufferFormat;
+import uk.co.caprica.vlcj.player.direct.DirectMediaPlayer;
+import uk.co.caprica.vlcj.player.direct.RenderCallback;
 import uk.co.caprica.vlcj.player.direct.format.RV32BufferFormat;
 import uk.co.caprica.vlcj.runtime.RuntimeUtil;
 
@@ -77,7 +81,6 @@ public class SimpleVLCPlayer extends StackPane {
     public SimpleVLCPlayer(Stage primstage, boolean controlsVisible, String... args) {
         //init visual content
         final Dimension bounds = getMaxBounds();
-
         img = new WritableImage((int) bounds.getWidth(), (int) bounds.getHeight());
         canvas = new ImageView(img);
         super.getChildren().add(canvas);
@@ -86,58 +89,15 @@ public class SimpleVLCPlayer extends StackPane {
         primstage.setOnCloseRequest(e -> release());
 
         //init size stuff
-        primstage.minWidthProperty().addListener((s, o, n) -> {
-            if ((double) n < MIN_WIDTH) {
-                primstage.setMinWidth(MIN_WIDTH);
-            }
-        });
-        primstage.minHeightProperty().addListener((s, o, n) -> {
-            if ((double) n < MIN_HEIGHT) {
-                primstage.setMinHeight(MIN_HEIGHT);
-            }
-        });
-        if (primstage.getMinHeight() < MIN_HEIGHT) {
-            primstage.setMinHeight(MIN_HEIGHT);
-        }
-        if (primstage.getMinWidth() < MIN_WIDTH) {
-            primstage.setMinWidth(MIN_WIDTH);
-        }
-
         ratio = new SimpleDoubleProperty(Double.NaN);
-        widthProperty().addListener((s, o, n) -> updateSize());
-        heightProperty().addListener((s, o, n) -> updateSize());
-        ratio.addListener(o -> updateSize());
-        //init MediaPlayer
-        final AtomicReference<ByteBuffer> currentByteBuffer = new AtomicReference<>();
-        final WritablePixelFormat<ByteBuffer> byteBgraInstance = PixelFormat.getByteBgraPreInstance();
-        final AtomicInteger frameNumber = new AtomicInteger(0);
+        initSize(primstage);
 
+        //init MediaPlayer
         mp = new MediaPlayerFactory(args).newDirectMediaPlayer(
                 (w, h) -> {
                     Platform.runLater(() -> ratio.set((double) h / (double) w));
                     return new RV32BufferFormat((int) bounds.getWidth(), (int) bounds.getHeight());
-                },
-                (dmp, nativeBuffers, bf) -> {
-                    final int renderFrameNumber = frameNumber.incrementAndGet();
-                    currentByteBuffer.set(nativeBuffers[0].getByteBuffer(0, nativeBuffers[0].size()));
-
-                    Platform.runLater(() -> {
-                        ByteBuffer byteBuffer = currentByteBuffer.get();
-                        int actualFrameNumber = frameNumber.get();
-
-                        if (renderFrameNumber == actualFrameNumber) {
-                            img.getPixelWriter().setPixels(0, 0, bf.getWidth(), bf.getHeight(), byteBgraInstance, byteBuffer, bf.getPitches()[0]);
-                        } else {
-                            System.out.println(
-                                    String.format("%s - Skipped late frame %d (actual = %d)",
-                                            SimpleVLCPlayer.this.getClass().getSimpleName(),
-                                            renderFrameNumber,
-                                            actualFrameNumber
-                                    )
-                            );
-                        }
-                    });
-                });
+                }, new Renderer());
 
         //init controls
         controls = new Controls(mp, primstage);
@@ -156,6 +116,31 @@ public class SimpleVLCPlayer extends StackPane {
             );
         });
         return dim;
+    }
+
+    private void initSize(Stage primstage) {
+        primstage.minWidthProperty().addListener((s, o, n) -> {
+            if ((double) n < MIN_WIDTH) {
+                primstage.setMinWidth(MIN_WIDTH);
+            }
+        });
+        primstage.minHeightProperty().addListener((s, o, n) -> {
+            if ((double) n < MIN_HEIGHT) {
+                primstage.setMinHeight(MIN_HEIGHT);
+            }
+        });
+        if (primstage.getMinHeight() < MIN_HEIGHT) {
+            primstage.setMinHeight(MIN_HEIGHT);
+        }
+        if (primstage.getMinWidth() < MIN_WIDTH) {
+            primstage.setMinWidth(MIN_WIDTH);
+        }
+        setMinSize(USE_PREF_SIZE, USE_PREF_SIZE);
+        setMaxSize(USE_PREF_SIZE, USE_PREF_SIZE);
+
+        widthProperty().addListener((s, o, n) -> updateSize());
+        heightProperty().addListener((s, o, n) -> updateSize());
+        ratio.addListener(o -> updateSize());
     }
 
     private void updateSize() {
@@ -201,4 +186,34 @@ public class SimpleVLCPlayer extends StackPane {
         mp.release();
     }
 
+    private class Renderer implements RenderCallback {
+
+        final AtomicReference<ByteBuffer> currentByteBuffer = new AtomicReference<>();
+        final WritablePixelFormat<ByteBuffer> byteBgraInstance = PixelFormat.getByteBgraPreInstance();
+        final AtomicInteger frameNumber = new AtomicInteger(0);
+
+        @Override
+        public void display(DirectMediaPlayer dmp, Memory[] nativeBuffers, BufferFormat bf) {
+            final int renderFrameNumber = frameNumber.incrementAndGet();
+            currentByteBuffer.set(nativeBuffers[0].getByteBuffer(0, nativeBuffers[0].size()));
+
+            Platform.runLater(() -> {
+                ByteBuffer byteBuffer = currentByteBuffer.get();
+                int actualFrameNumber = frameNumber.get();
+
+                if (renderFrameNumber == actualFrameNumber) {
+                    img.getPixelWriter().setPixels(0, 0, bf.getWidth(), bf.getHeight(), byteBgraInstance, byteBuffer, bf.getPitches()[0]);
+                } else {
+                    System.out.println(
+                            String.format("%s - Skipped late frame %d (actual = %d)",
+                                    SimpleVLCPlayer.this.getClass().getSimpleName(),
+                                    renderFrameNumber,
+                                    actualFrameNumber
+                            )
+                    );
+                }
+            });
+        }
+
+    }
 }
