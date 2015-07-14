@@ -105,6 +105,8 @@ public class SimpleVLCPlayer extends StackPane {
         widthProperty().addListener((s, o, n) -> controls.setPrefWidth((double) n));
         super.getChildren().add(controls);
         setControlsVisible(controlsVisible);
+
+        setOnMouseClicked(e -> controls.requestFocus());
     }
 
     private Dimension getMaxBounds() {

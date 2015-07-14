@@ -76,7 +76,7 @@ public class Controls extends AnchorPane implements Initializable {
         fullscreen.setOnMouseClicked(e -> fullscreen());
         initKeyMapping();
         setOnKeyPressed(e -> {
-            if (map.containsKey(e.getCode())) {
+            if (isFocused() && map.containsKey(e.getCode())) {
                 map.get(e.getCode()).handle(e);
             }
         });
