@@ -13,9 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
@@ -161,19 +159,6 @@ public class SimpleVLCPlayer extends StackPane {
 
     final public MediaPlayer getMediaPlayer() {
         return mp;
-    }
-
-    /**
-     * Gets the list of children of this Parent as a read-only list.
-     *
-     * @return read-only access to this parent's children ObservableList,
-     * getChildrenUnmodifiable() internally
-     *
-     */
-    @Override
-    @Deprecated
-    final public ObservableList<Node> getChildren() {
-        return getChildrenUnmodifiable();
     }
 
     final public void setControlsVisible(boolean visible) {
