@@ -18,7 +18,7 @@ public class VLCPlayer extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        SimpleVLCPlayer root = new SimpleVLCPlayer(primaryStage, true);
+        SimpleVLCPlayer root = new SimpleVLCPlayer(primaryStage);
 
         Scene scene = new Scene(root, 900, 500);
 

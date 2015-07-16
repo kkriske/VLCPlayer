@@ -37,7 +37,7 @@ import uk.co.caprica.vlcj.runtime.RuntimeUtil;
  *
  * @author kristof
  */
-public class SimpleVLCPlayer extends StackPane {
+public class SimpleVLCPlayer extends StackPane implements AutoCloseable {
 
     final private ImageView canvas;
     final private WritableImage img;
@@ -69,14 +69,10 @@ public class SimpleVLCPlayer extends StackPane {
     }
 
     public SimpleVLCPlayer(Stage primstage) {
-        this(primstage, true);
+        this(primstage, ARGUMENTS);
     }
 
-    public SimpleVLCPlayer(Stage primstage, boolean controlsVisible) {
-        this(primstage, controlsVisible, ARGUMENTS);
-    }
-
-    public SimpleVLCPlayer(Stage primstage, boolean controlsVisible, String... args) {
+    public SimpleVLCPlayer(Stage primstage, String... args) {
         //init visual content
         final Dimension bounds = getMaxBounds();
         img = new WritableImage((int) bounds.getWidth(), (int) bounds.getHeight());
@@ -84,7 +80,7 @@ public class SimpleVLCPlayer extends StackPane {
         super.getChildren().add(canvas);
         setBackground(new Background(new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
 
-        primstage.setOnCloseRequest(e -> release());
+        primstage.setOnCloseRequest(e -> close());
 
         //init size stuff
         ratio = new SimpleDoubleProperty(Double.NaN);
@@ -102,7 +98,6 @@ public class SimpleVLCPlayer extends StackPane {
         heightProperty().addListener((s, o, n) -> controls.setPrefHeight((double) n));
         widthProperty().addListener((s, o, n) -> controls.setPrefWidth((double) n));
         super.getChildren().add(controls);
-        setControlsVisible(controlsVisible);
 
         setOnMouseClicked(e -> controls.requestFocus());
     }
@@ -169,7 +164,8 @@ public class SimpleVLCPlayer extends StackPane {
         mp.playMedia(url);
     }
 
-    final public void release() {
+    @Override
+    final public void close() {
         mp.release();
     }
 
