@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+
+<fx:root id="root" alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" stylesheets="@timestamp.css" type="VBox" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <Label fx:id="text" alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="17.0" text="Label">
+         <VBox.margin>
+            <Insets />
+         </VBox.margin>
+         <padding>
+            <Insets left="3.0" right="3.0" />
+         </padding></Label>
+      <Path stroke="BLACK" strokeType="INSIDE" strokeWidth="0.0">
+         <elements>
+            <MoveTo />
+            <LineTo x="-5.0" y="-7.0" />
+            <LineTo x="5.0" y="-7.0" />
+            <ClosePath />
+         </elements>
+      </Path>
+   </children>
+</fx:root>

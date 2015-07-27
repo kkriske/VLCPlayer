@@ -12,12 +12,15 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Insets;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.PixelFormat;
 import javafx.scene.image.WritableImage;
 import javafx.scene.image.WritablePixelFormat;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
@@ -25,6 +28,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import uk.co.caprica.vlcj.player.MediaPlayer;
 import uk.co.caprica.vlcj.player.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.direct.BufferFormat;
@@ -80,7 +84,7 @@ public class SimpleVLCPlayer extends StackPane implements AutoCloseable {
         super.getChildren().add(canvas);
         setBackground(new Background(new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
 
-        primstage.setOnCloseRequest(e -> close());
+        primstage.addEventHandler(WindowEvent.WINDOW_CLOSE_REQUEST, e -> close());
 
         //init size stuff
         ratio = new SimpleDoubleProperty(Double.NaN);
@@ -99,7 +103,7 @@ public class SimpleVLCPlayer extends StackPane implements AutoCloseable {
         widthProperty().addListener((s, o, n) -> controls.setPrefWidth((double) n));
         super.getChildren().add(controls);
 
-        setOnMouseClicked(e -> controls.requestFocus());
+        addEventHandler(MouseEvent.MOUSE_CLICKED, e -> controls.requestFocus());
     }
 
     private Dimension getMaxBounds() {
@@ -156,12 +160,28 @@ public class SimpleVLCPlayer extends StackPane implements AutoCloseable {
         return mp;
     }
 
-    final public void setControlsVisible(boolean visible) {
-        controls.setVisible(visible);
+    final public BooleanProperty controlsVisibleProperty() {
+        return controls.controlsVisibleProperty();
+    }
+
+    final public DoubleProperty controlsOpacityProperty() {
+        return controls.controlsOpacityProperty();
+    }
+
+    final public Controls getControls() {
+        return controls;
     }
 
     final public void play(String url) {
         mp.playMedia(url);
+    }
+
+    final public void setPause(boolean pause) {
+        mp.setPause(pause);
+    }
+
+    final public void stop() {
+        mp.stop();
     }
 
     @Override

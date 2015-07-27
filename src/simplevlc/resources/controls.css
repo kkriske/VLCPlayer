@@ -1,8 +1,8 @@
 .hoverbutton:hover{
-    opacity:0.5;
+    -fx-opacity:0.5;
 }
 
-.backgroundbar{
+#root > *{
     -fx-background-color:#ddd;
 }
 
@@ -16,8 +16,4 @@
     -fx-accent:#888;
     -fx-background-radius:1;
     -fx-background-insets:4 0 4 0;
-}
-
-.timelabel{
-    
 }

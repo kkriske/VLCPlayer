@@ -1,0 +1,12 @@
+#root > *{
+    -fx-background-color:#bbb;
+    -fx-fill:#bbb;
+}
+
+#root > .label {
+    -fx-background-radius:5;
+}
+
+#root{
+    -fx-background-color:transparent;
+}
