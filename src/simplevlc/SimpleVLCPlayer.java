@@ -45,6 +45,7 @@ public class SimpleVLCPlayer extends StackPane implements AutoCloseable {
 
     final private ImageView canvas;
     final private WritableImage img;
+    private final MediaPlayerFactory factory;
     final private MediaPlayer mp;
     final private Controls controls;
     final private SimpleDoubleProperty ratio;
@@ -59,17 +60,22 @@ public class SimpleVLCPlayer extends StackPane implements AutoCloseable {
                 "--input-fast-seek",
                 "--no-video-title-show",
                 "--disable-screensaver",
-                "--network-caching",
-                "3000",
+                "--network-caching", "3000",
                 "--quiet",
                 "--quiet-synchro",
-                "--intf",
-                "dummy"
+                "--intf", "dummy"
             };
 
     static {
         //System.out.println(NativeLibrary.getInstance(RuntimeUtil.getLibVlcLibraryName()));
+        //Native.loadLibrary(RuntimeUtil.getLibVlcLibraryName(), LibVlc.class);
+        NativeLibrary.addSearchPath(RuntimeUtil.getLibVlcLibraryName(), "/");
         NativeLibrary.addSearchPath(RuntimeUtil.getLibVlcLibraryName(), "C:\\Program Files\\VideoLAN\\VLC");
+        NativeLibrary.addSearchPath(RuntimeUtil.getLibVlcLibraryName(), "C:\\Program Files(x86)\\VideoLAN\\VLC");
+    }
+
+    static final public boolean isPlatformSupported() {
+        return RuntimeUtil.isWindows() || RuntimeUtil.isNix() || RuntimeUtil.isMac();
     }
 
     public SimpleVLCPlayer(Stage primstage) {
@@ -77,6 +83,10 @@ public class SimpleVLCPlayer extends StackPane implements AutoCloseable {
     }
 
     public SimpleVLCPlayer(Stage primstage, String... args) {
+        if (!isPlatformSupported()) {
+            throw new RuntimeException("platform not supported");
+        }
+
         //init visual content
         final Dimension bounds = getMaxBounds();
         img = new WritableImage((int) bounds.getWidth(), (int) bounds.getHeight());
@@ -91,7 +101,8 @@ public class SimpleVLCPlayer extends StackPane implements AutoCloseable {
         initSize(primstage);
 
         //init MediaPlayer
-        mp = new MediaPlayerFactory(args).newDirectMediaPlayer(
+        factory = new MediaPlayerFactory(args);
+        mp = factory.newDirectMediaPlayer(
                 (w, h) -> {
                     Platform.runLater(() -> ratio.set((double) h / (double) w));
                     return new RV32BufferFormat((int) bounds.getWidth(), (int) bounds.getHeight());
@@ -187,6 +198,7 @@ public class SimpleVLCPlayer extends StackPane implements AutoCloseable {
     @Override
     final public void close() {
         mp.release();
+        factory.release();
     }
 
     private class Renderer implements RenderCallback {

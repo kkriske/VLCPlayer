@@ -9,11 +9,20 @@
 .progressbar > .track{
     -fx-control-inner-background:#ccc;
     -fx-background-radius:1;
+    //-fx-pref-height:10px;
     -fx-background-insets:4 0 4 0;
+    -fx-background-radius:5;
 }
 
 .progressbar > .bar{
     -fx-accent:#888;
     -fx-background-radius:1;
+    //-fx-height:10px;
     -fx-background-insets:4 0 4 0;
+    -fx-background-radius:5;
+}
+
+.volumeslider{
+    -fx-background-color:#ddd;
+    -fx-background-radius:10 10 0 0;
 }

@@ -15,20 +15,26 @@ import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.shape.Circle;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import uk.co.caprica.vlcj.player.MediaPlayer;
@@ -45,13 +51,21 @@ public class Controls extends AnchorPane implements Initializable {
     private final MediaPlayer mp;
     private final TimeStamp ts;
     private FadeTransition fade;
+    private boolean finished;
+    private final BooleanProperty mutedProperty;
+    private final DoubleProperty volumeProperty;
     private static final Image PLAY = new Image(Controls.class.getResourceAsStream("resources/play.png")),
             PAUSE = new Image(Controls.class.getResourceAsStream("resources/pause.png")),
             ENTERFS = new Image(Controls.class.getResourceAsStream("resources/enterfs.png")),
-            EXITFS = new Image(Controls.class.getResourceAsStream("resources/exitfs.png"));
+            EXITFS = new Image(Controls.class.getResourceAsStream("resources/exitfs.png")),
+            VOLUMEMUTED = new Image(Controls.class.getResourceAsStream("resources/volumemuted.png")),
+            VOLUMELOW = new Image(Controls.class.getResourceAsStream("resources/volumelow.png")),
+            VOLUMEMEDIUM = new Image(Controls.class.getResourceAsStream("resources/volumemedium.png")),
+            VOLUMEHIGH = new Image(Controls.class.getResourceAsStream("resources/volumehigh.png")),
+            VOLUMEHIGHEST = new Image(Controls.class.getResourceAsStream("resources/volumehighest.png"));
 
     @FXML
-    private ImageView playpause, fullscreen;
+    private ImageView playpause, fullscreen, volume;
 
     @FXML
     private AnchorPane controlpane;
@@ -60,13 +74,22 @@ public class Controls extends AnchorPane implements Initializable {
     private ProgressBar progressbar;
 
     @FXML
-    private Label currenttime, totaltime;
+    private Text currenttime, totaltime;
+
+    @FXML
+    private Circle thumb;
+
+    @FXML
+    private Slider volumeslider;
 
     public Controls(MediaPlayer mp, Stage primstage) {
         this.mp = mp;
         this.primstage = primstage;
         this.map = new HashMap<>();
+        finished = false;
         ts = new TimeStamp();
+        mutedProperty = new SimpleBooleanProperty(false);
+        volumeProperty = new SimpleDoubleProperty();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("resources/controls.fxml"));
             loader.setRoot(this);
@@ -91,6 +114,53 @@ public class Controls extends AnchorPane implements Initializable {
             }
         });
 
+        volumeProperty.addListener((s, o, n) -> mp.setVolume((int) (double) n));
+        volumeProperty.set(100);
+        DoubleProperty dummy = new SimpleDoubleProperty(0);
+        mutedProperty.addListener((s, o, n) -> {
+            if (n) {
+                volumeslider.valueProperty().bind(dummy);
+            } else {
+                volumeslider.valueProperty().unbind();
+                volumeslider.setValue(volumeProperty.get());
+            }
+        });
+        volumeProperty.addListener((s, o, n) -> {
+            //  try {
+            volumeslider.setValue((double) n);
+            //} catch (Exception ex) {
+            //  System.out.println(ex);
+            // }
+        });
+        //volumeslider.valueProperty().bind(Bindings.when(mutedProperty).then(0).otherwise(volumeProperty));
+        //binding moet weg
+        volumeslider.setValue(100);
+        volumeslider.setVisible(false);
+        volumeslider.valueProperty().addListener((s, o, n) -> {
+            mp.setVolume((int) (double) n);
+        });
+
+        mutedProperty.addListener((s, o, n) -> mp.mute(n));
+
+        volume.setOnMouseClicked(e -> mute());
+        volume.imageProperty().bind(
+                Bindings.when(mutedProperty)
+                .<Image>then(VOLUMEMUTED)
+                .otherwise(
+                        Bindings.when(volumeslider.valueProperty().greaterThan(100))
+                        .<Image>then(
+                                Bindings.when(volumeslider.valueProperty().greaterThan(150))
+                                .<Image>then(VOLUMEHIGHEST)
+                                .otherwise(VOLUMEHIGH)
+                        )
+                        .otherwise(
+                                Bindings.when(volumeslider.valueProperty().greaterThan(50))
+                                .<Image>then(VOLUMEMEDIUM)
+                                .otherwise(VOLUMELOW)
+                        )
+                )
+        );
+
         final Cursor cursor = getCursor();
         cursorProperty().bind(Bindings.when(controlpane.visibleProperty()).<Cursor>then(cursor).otherwise(Cursor.NONE));
 
@@ -110,22 +180,52 @@ public class Controls extends AnchorPane implements Initializable {
             }
             controlpane.setVisible(true);
             controlpane.setOpacity(1);
-
-            updateTimeLabel(e);
         };
 
         EventHandler<MouseEvent> clickhandler = e -> {
-            Node node = (Node) e.getTarget();
-            if (node.getStyleClass().contains("track")
-                    || node.getStyleClass().contains("bar")) {
-                mp.setTime(calcTimeLabel(e));
+            //Node node = (Node) e.getTarget();
+            /*if (node.getStyleClass().contains("track")
+             || node.getStyleClass().contains("bar")) {*/
+            if (progressbar.getChildrenUnmodifiable().contains((Node) e.getTarget())) {
+                checkfinished();
+                long time = calcTimeLabel(e);
+
+                mp.setTime(time);
+                progressbar.setProgress(((double) time) / mp.getLength());
+
             }
         };
 
         addEventFilter(MouseEvent.MOUSE_MOVED, movehandler);
+        addEventFilter(MouseEvent.MOUSE_MOVED, e -> updateTimeLabel(e));
+        addEventFilter(MouseEvent.MOUSE_MOVED, e -> {
+            if (e.getTarget().equals(volume) || e.getTarget().equals(volumeslider) || volumeslider.getChildrenUnmodifiable().contains((Node) e.getTarget())) {
+                volumeslider.setVisible(true);
+            } else {
+                volumeslider.setVisible(false);
+            }
+        });
         addEventFilter(MouseEvent.MOUSE_PRESSED, clickhandler);
         addEventFilter(MouseEvent.MOUSE_DRAGGED, clickhandler);
-        addEventFilter(MouseEvent.MOUSE_DRAGGED, movehandler);
+        addEventFilter(MouseEvent.MOUSE_DRAGGED, e -> updateTimeLabel(e));
+        addEventFilter(ScrollEvent.SCROLL, e -> {
+            if (mutedProperty.get()) {
+                return;
+            }
+            int newvol = mp.getVolume() + (e.getDeltaY() > 0 ? 5 : -5);
+            if (newvol <= 200) {
+                mp.setVolume(newvol);
+                volumeslider.setValue(newvol);
+            }
+        });
+
+        thumb.setLayoutY(progressbar.getLayoutY());
+        ChangeListener<Number> thumbPosition = (s, o, n) -> thumb.setLayoutX(progressbar.getLayoutX() + progressbar.getProgress() * progressbar.getWidth());
+        progressbar.layoutYProperty().addListener((s, o, n) -> thumb.setLayoutY((progressbar.getHeight() / 2) + (double) n));
+        progressbar.progressProperty().addListener(thumbPosition);
+        progressbar.widthProperty().addListener(thumbPosition);
+        progressbar.layoutXProperty().addListener(thumbPosition);
+        thumb.setMouseTransparent(true);
 
         mp.addMediaPlayerEventListener(new MediaPlayerEventAdapter() {
 
@@ -161,7 +261,23 @@ public class Controls extends AnchorPane implements Initializable {
                     currenttime.setText(formatNanoToTime(mp.getTime()));
                 });
             }
+
+            @Override
+            public void finished(MediaPlayer mediaPlayer) {
+                mp.prepareMedia(mp.mrl());
+                Platform.runLater(() -> {
+                    progressbar.setProgress(0);
+                    currenttime.setText(formatNanoToTime(0));
+                });
+            }
         });
+    }
+
+    private void checkfinished() {
+        if (finished) {
+            mp.play();
+            finished = false;
+        }
     }
 
     public BooleanProperty controlsVisibleProperty() {
@@ -177,17 +293,24 @@ public class Controls extends AnchorPane implements Initializable {
         map.put(KeyCode.SPACE, e -> playpause());
         map.put(KeyCode.LEFT, e -> rewind(e));
         map.put(KeyCode.RIGHT, e -> forward(e));
-        map.put(KeyCode.N, e -> fade.playFromStart());
+        map.put(KeyCode.UP, e -> volumeUp(e));
+        map.put(KeyCode.DOWN, e -> volumeDown(e));
         map.put(KeyCode.E, e -> mp.nextFrame());
+        map.put(KeyCode.M, e -> mute());
     }
 
     @FXML
     private void playpause() {
         mp.setPause(mp.isPlaying());
+        checkfinished();
     }
 
     private void fullscreen() {
         primstage.setFullScreen(!primstage.isFullScreen());
+    }
+
+    private void mute() {
+        mutedProperty.set(!mutedProperty.get());
     }
 
     private void rewind(KeyEvent e) {
@@ -204,6 +327,24 @@ public class Controls extends AnchorPane implements Initializable {
         }
     }
 
+    private void volumeUp(KeyEvent e) {
+        if (e.isControlDown()) {
+            double newVolume = volumeProperty.get() + 5;
+            if (newVolume <= 200) {
+                volumeProperty.set(newVolume);
+            }
+        }
+    }
+
+    private void volumeDown(KeyEvent e) {
+        if (e.isControlDown()) {
+            double newVolume = volumeProperty.get() - 5;
+            if (newVolume >= 0) {
+                volumeProperty.set(newVolume);
+            }
+        }
+    }
+
     private String formatNanoToTime(long time) {
         long seconds = time / 1000;
         long minutes = seconds / 60;
@@ -212,9 +353,10 @@ public class Controls extends AnchorPane implements Initializable {
     }
 
     private void updateTimeLabel(MouseEvent e) {
-        Node node = (Node) e.getTarget();
-        if (node.getStyleClass().contains("track")
-                || node.getStyleClass().contains("bar")) {
+        /*Node node = (Node) e.getTarget();
+         if (node.getStyleClass().contains("track")
+         || node.getStyleClass().contains("bar")) {*/
+        if (progressbar.getChildrenUnmodifiable().contains((Node) e.getTarget())) {
             ts.setText(formatNanoToTime(calcTimeLabel(e)));
             ts.setVisible(true);
         } else {

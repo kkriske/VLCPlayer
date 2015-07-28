@@ -1,19 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.text.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.shape.*?>
 <?import java.lang.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.image.*?>
 <?import javafx.scene.layout.*?>
 
-<fx:root id="root" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" stylesheets="@controls.css" type="AnchorPane" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+<fx:root id="root" focusTraversable="true" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefWidth="500.0" stylesheets="@controls.css" type="AnchorPane" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
     <children>
         <AnchorPane fx:id="controlpane" prefHeight="28.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
             <children>
                 <ImageView fx:id="playpause" fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="hoverbutton" AnchorPane.bottomAnchor="2.0" AnchorPane.leftAnchor="2.0" AnchorPane.topAnchor="2.0" />
-                <Label fx:id="currenttime" alignment="CENTER" prefWidth="52.0" styleClass="timelabel" text="999:99:99" AnchorPane.bottomAnchor="2.0" AnchorPane.leftAnchor="28.0" AnchorPane.topAnchor="2.0" />
-                <ProgressBar fx:id="progressbar" progress="0.0" styleClass="progressbar" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="82.0" AnchorPane.rightAnchor="82.0" AnchorPane.topAnchor="5.0" />
-                <Label fx:id="totaltime" alignment="CENTER" ellipsisString="" prefHeight="24.0" prefWidth="52.0" styleClass="timelabel" text="999:99:99" AnchorPane.bottomAnchor="2.0" AnchorPane.rightAnchor="28.0" AnchorPane.topAnchor="2.0" />
+            <TextFlow prefWidth="113.0" textAlignment="CENTER" AnchorPane.bottomAnchor="6.0" AnchorPane.leftAnchor="28.0" AnchorPane.topAnchor="6.0">
+               <children>
+                  <Text fx:id="currenttime" strokeType="OUTSIDE" strokeWidth="0.0" text="999:99:99" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text=" / " />
+                  <Text fx:id="totaltime" strokeType="OUTSIDE" strokeWidth="0.0" text="999:99:99" />
+               </children>
+            </TextFlow>
+                <ProgressBar fx:id="progressbar" progress="0.0" styleClass="progressbar" AnchorPane.bottomAnchor="5.0" AnchorPane.leftAnchor="145.0" AnchorPane.rightAnchor="60.0" AnchorPane.topAnchor="5.0" />
+            <ImageView id="volumebutton" fx:id="volume" fitHeight="28.0" fitWidth="28.0" pickOnBounds="true" preserveRatio="true" styleClass="hoverbutton" AnchorPane.bottomAnchor="0.0" AnchorPane.rightAnchor="30.0" AnchorPane.topAnchor="0.0" />
+            <Slider fx:id="volumeslider" blockIncrement="5.0" layoutY="-100.0" max="200.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" orientation="VERTICAL" prefHeight="100.0" prefWidth="24.0" snapToTicks="true" styleClass="volumeslider" AnchorPane.rightAnchor="32.0" />
                 <ImageView fx:id="fullscreen" fitHeight="24.0" fitWidth="24.0" pickOnBounds="true" preserveRatio="true" styleClass="hoverbutton" AnchorPane.bottomAnchor="2.0" AnchorPane.rightAnchor="2.0" AnchorPane.topAnchor="2.0" />
+            <Circle fx:id="thumb" radius="6.0" stroke="#888888" strokeType="INSIDE">
+               <fill>
+                  <RadialGradient centerX="0.5" centerY="0.5" radius="0.5">
+                     <stops>
+                        <Stop color="#a8a8a8" />
+                        <Stop color="#dddddd" offset="1.0" />
+                     </stops>
+                  </RadialGradient>
+               </fill>
+            </Circle>
             </children>
         </AnchorPane>
     </children>
